@@ -24,7 +24,7 @@ This Python script simulates a scenario where a gunner with various guns and bul
 1. Ensure you have Python installed on your system.
 2. Clone or download the repository to your local machine.
 3. Open a terminal or command prompt and navigate to the directory containing the Python script.
-4. Run the script using the command `python gunner_vs_target.py`.
+4. Run the script using the command `python GunMaster.py`.
 5. Follow the on-screen prompts to select a gun and bullet type, and observe the simulation results.
 
 ## Note
