@@ -1,3 +1,6 @@
+import pygame, os, time
+from art import *
+
 class Person:
 
     def __init__(
@@ -78,26 +81,31 @@ class Gun: # Parent Class
         base_damage: int,
         accuracy: float,
         gun_range: int,
-        amo_capacity: int
+        ammo_capacity: int
     ) -> None:
         self.gun_id: int = gun_id
         self.base_damage: int = base_damage
         self.accuracy: int = accuracy
         self.gun_range: int = gun_range
-        self.amo_capacity: int = amo_capacity
+        self.ammo_capacity: int = ammo_capacity
         self.magazine_well: list[object] = ...
 
     def triger(self, damage: float or int) -> float or int:
         try:
+            damage = damage + (damage * self.magazine_well[-1].damage) # The final damage for the target
             self.magazine_well.pop()
-            damage = damage + (damage * self.magazine_well[0].damage) # This is the final damage for the target
         except IndexError:
             return 0
         
         return damage
 
     def reload(self, magazine: object) -> None:
-        self.magazine_well = magazine.bullets * self.amo_capacity
+        self.magazine_well = magazine.bullets * self.ammo_capacity
+
+    def load_mp3(self, file: str) -> None:
+        pygame.mixer.init()
+        pygame.mixer.music.load(file)
+        pygame.mixer.music.play()
 
 class Pistol(Gun): # Child Class
 
@@ -107,8 +115,22 @@ class Pistol(Gun): # Child Class
             base_damage = 30,
             accuracy = 0.70, # in percentage (70%)
             gun_range = 50, # in meters (50 meters)
-            amo_capacity = 10
+            ammo_capacity = 10
         )
+
+    # Polymorphism
+
+    def shoot_sound(self):
+        file: str = "sounds/pistol_shoot.mp3"
+        self.load_mp3(file)
+
+    def reloading_sound(self):
+        file: str = "sounds/pistol_reload.mp3"
+        self.load_mp3(file)
+
+    def no_ammo_sound(self): 
+        file: str = "sounds/no_ammo.mp3"
+        self.load_mp3(file)
 
 class Shotgun(Gun): # Child Class
 
@@ -118,8 +140,22 @@ class Shotgun(Gun): # Child Class
             base_damage = 80,
             accuracy = 0.50, # in percentage (50%)
             gun_range = 25, # in meters (25 meters)
-            amo_capacity = 2
+            ammo_capacity = 2
         )
+
+    # Polymorphism
+
+    def shoot_sound(self):
+        file: str = "sounds/shotgun_shoot.mp3"
+        self.load_mp3(file)
+
+    def reloading_sound(self):
+        file: str = "sounds/shotgun_reload.mp3"
+        self.load_mp3(file)
+
+    def no_ammo_sound(self):
+        file: str = "sounds/no_ammo.mp3"
+        self.load_mp3(file)
 
 class Sniper(Gun): # Child Class
 
@@ -129,30 +165,62 @@ class Sniper(Gun): # Child Class
             base_damage = 300,
             accuracy = 0.90, # in percentage (90%)
             gun_range = 2000, # in meters (2,000 meters)
-            amo_capacity = 5
+            ammo_capacity = 5
         )
 
-import os, time
-from art import *
+    # Polymorphism
+
+    def shoot_sound(self):
+        file: str = "sounds/sniper_shoot.mp3"
+        self.load_mp3(file)
+
+    def reloading_sound(self):
+        file: str = "sounds/sniper_reload.mp3"
+        self.load_mp3(file)
+
+    def no_ammo_sound(self):
+        file: str = "sounds/no_ammo.mp3"
+        self.load_mp3(file)
 
 # Clear the console
 def clear_console() -> None:
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system('cls')
 
 def big_font(text: str) -> None:
     clear_console()
     ascii_art = text2art(text)
     print(ascii_art)
-    time.sleep(2)
 
 # Positional Selector
 def position(*args) -> object | None:
     def select(pos):
         try:
-            return args[pos-1]
+            return args[pos-1] if pos > 0 else None
         except IndexError:
             return None
     return select
+
+def error_catcher(select, selected, errorType):
+    try:
+        _select = int(select)
+        return selected(_select)
+    except errorType:
+        return 0
+
+def err_msg(used_item: any) -> any:
+    match used_item:
+        case None:
+            print('Err: Invalid Input :: The selection scope is 1 - 3')
+            input('Click Enter to RESELECT')
+            return used_item
+
+        case 0:
+            print('Err: Invalid Value Input :: Use only int datatype')
+            input('Click Enter to RESELECT')
+            return None
+
+        case _:
+            return used_item
 
 clear_console() # Clean the console
 
@@ -186,8 +254,15 @@ while used_gun == ... or used_gun is None:
     =====================================================
         '''
         )
-    select: int = int(input('Select Gun: '))
-    used_gun = position(pistol, shotgun, sniper)(select)
+
+    used_gun = error_catcher(
+        select = input('Select Gun: '),
+        selected = position(pistol, shotgun, sniper),
+        errorType = ValueError
+    )
+
+    used_gun = err_msg(used_gun)
+
     clear_console()
 
 while used_bullet == ... or used_bullet == None:
@@ -203,17 +278,26 @@ while used_bullet == ... or used_bullet == None:
     =====================================================
         '''
         )
-    select: int = int(input('Select Bullet: '))
-    used_bullet = position(hp_bullet, slug_bullet, ap_bullet)(select)
 
-    # Magazine Object
-    magazine = Magazine(used_bullet)
+    used_bullet = error_catcher(
+        select = input('Select Bullet: '),
+        selected = position(hp_bullet, slug_bullet, ap_bullet),
+        errorType = ValueError
+    )
+
+    used_bullet = err_msg(used_bullet)
+
     try:
-        if used_gun.gun_id != magazine.bullets[0].bullet_id:
-            reselect = input('Unable to reload: Bullet is not for the gun you used\nClick Enter to reselect')
+        if used_gun.gun_id != used_bullet.bullet_id:
+            reselect = input(
+                "Unable to reload: Bullet is not for the gun you've used\nClick Enter to reselect")
             used_bullet = None
         else:
+            # Magazine Object
+            magazine = Magazine(used_bullet)
+            used_gun.reloading_sound()
             used_gun.reload(magazine)
+            time.sleep(2)
     except AttributeError:
         used_bullet = None
         
@@ -222,12 +306,12 @@ while used_bullet == ... or used_bullet == None:
 # Object of Target and the Gunner
 
 target = Target(
-        'Any name...',
+        'Any Name...',
         100 # Armor
     )
 
 assassinator = Gunner(
-        'Any name...',
+        'Any Name...',
         0, # Armor
         10, # The distance away from the target
         used_gun
@@ -237,7 +321,7 @@ target_health = target.health
 target_armor = target.armor
 
 while target_health > 0:
-    amo: int = len(assassinator.gun_used.magazine_well)
+    ammo: int = len(assassinator.gun_used.magazine_well) # Tracks The Number of ammo
     
     print(
             f'''
@@ -257,7 +341,7 @@ Bullet Damage            : {used_bullet.damage}
 ============================================================================================
                                     --Gun Status--
                                     
-Amo : {amo}/{assassinator.gun_used.amo_capacity}
+ammo : {ammo}/{assassinator.gun_used.ammo_capacity}
             '''
         )
     
@@ -272,10 +356,12 @@ Click R then Enter to Reload
     
     if action.upper() != 'R':
 
-        if amo < 1:
-            big_font("NO AMO")
+        if ammo < 1: # Check if not enough ammo
+            big_font("NO AMMO")
+            used_gun.no_ammo_sound()
+            time.sleep(2)
         
-        if target.armor > 0 and amo > 0:
+        if target.armor > 0 and ammo > 0: # Check if the is not fully damaged and if there is still bullets otherwise we don't need to calculate
             #Armor Reduction = Damage * Armor Reduction Percentage
             #Health Damage = Damage - Armor Reduction
             armor_reduction = assassinator.final_damage * 0.7 # Armor Reduction Percentage is 70%
@@ -288,19 +374,21 @@ Click R then Enter to Reload
         else:
             target.health -= assassinator.gun_used.triger(assassinator.final_damage)
 
-        if amo > 0:
+        if ammo > 0:
             clear_console()
             big_font("BANG...")
+            used_gun.shoot_sound()
+            time.sleep(2)
 
         target_health = target.health
     else:
         big_font("RELOADING...")
+        used_gun.reloading_sound()
         used_gun.reload(magazine)
+        time.sleep(2)
 
     clear_console()
 
 big_font(f"{target.name.upper()}  IS  DEAD!")
+time.sleep(2)
 big_font("Mission  Success!")
-
-
-
