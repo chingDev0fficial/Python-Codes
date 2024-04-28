@@ -3,46 +3,41 @@ from art import *
 
 class Person:
 
-    def __init__(
-        self,
-        name: str,
-        armor: int = 0,
-        gun_mastery: int = 0
-    ) -> None:
-        self.name: str = name
-        self.health: int = 100
-        self.armor: int = armor # bulletproof
-        self.gun_mastery: float = float(f'0.{gun_mastery}') # in percentage (%)
+    def __init__(self, name: str) -> None:
+        self._name: str = name
+        self._health: int = 100
+        self._armor: int = 0 # bulletproof
+        self._gun_mastery: float = 0.0 # in percentage (%)
+
+    def get_name(self):
+        return self._name
+
+    def get_health(self):
+        return self._health
+
+    def get_armor(self):
+        return self._armor
+
+    def get_gun_mastery(self):
+        return self._gun_mastery
+
 
 class Target(Person):
 
-    def __init__(
-        self,
-        name: str,
-        armor: int
-    ) -> None:
-        super().__init__(
-            name = name,
-            armor = armor,
-            gun_mastery = 0
-        )
+    def __init__(self, name: str, armor: int) -> None:
+        super().__init__(name = name)
+        self._armor = armor
+
         
 class Gunner(Person):
     
-    def __init__(
-        self,
-        name: str,
-        armor: int,
-        distance_away: int, # in meters
-        gun_used: object
-    ) -> None:
-        super().__init__(
-            name = name,
-            armor = armor,
-            gun_mastery = 70 # Gun Mastery = 70%
-        )
-        self.gun_used: object = gun_used
-        self.distance_away: int = distance_away
+    def __init__(self, name: str, armor: int, distance_away: int, gun_used: object) -> None:
+        super().__init__(name = name)
+        self._armor = armor
+        self._gun_mastery = 0.70 # Gun mastery is 70%
+        
+        self._gun_used: object = gun_used
+        self._distance_away: int = distance_away
 
         # Fomula:
         # Final Damage = Base Damage × Accuracy × DHR Probability
@@ -50,28 +45,45 @@ class Gunner(Person):
         # DRH Probability formula = max(0 , 1-(Distance/Gun Range))
         
         # Distance-to-Range Hit Probability
-        DRH_probability = max(0, 1-(self.distance_away/self.gun_used.gun_range))
-        self.final_damage = self.gun_used.base_damage * self.gun_used.accuracy * DRH_probability
+        DRH_probability = max(0, 1-(self._distance_away/self._gun_used._gun_range))
+        self._final_damage = self._gun_used.get_base_damage() * self._gun_used.get_accuracy() * DRH_probability
 
         # in this case the mastery of the gunner when it comes to gun is 70%
         # formula:
         # New Damage = Final Damage + (Final Damage × Gun Mastery)
-        self.final_damage = self.final_damage + (self.final_damage * self.gun_mastery)
+        self._final_damage = self._final_damage + (self._final_damage * self._gun_mastery)
+
+    def get_gun_used(self):
+        return self._gun_used
+
+    def get_distance(self):
+        return self._distance_away
+
+    def get_damage(self):
+        return self._final_damage
 
 class Bullet:
 
     def __init__(
-        self,
-        damage: int,
+        self, damage: int,
         bullet_id: int
     ) -> None:
-        self.damage: float = float(f'0.{damage}')
-        self.bullet_id: int = bullet_id
+        self._damage: float = float(f'0.{damage}')
+        self._bullet_id: int = bullet_id
+
+    def get_damage(self):
+        return self._damage
+
+    def get_bullet_id(self):
+        return self._bullet_id
 
 class Magazine:
 
     def __init__(self, bullet: object) -> None:
-        self.bullets: list[object] = [bullet]
+        self._bullets: list[object] = [bullet]
+
+    def get_bullets(self):
+        return self._bullets
 
 class Gun: # Parent Class
 
@@ -83,36 +95,54 @@ class Gun: # Parent Class
         gun_range: int,
         ammo_capacity: int
     ) -> None:
-        self.gun_id: int = gun_id
-        self.base_damage: int = base_damage
-        self.accuracy: int = accuracy
-        self.gun_range: int = gun_range
-        self.ammo_capacity: int = ammo_capacity
-        self.magazine_well: list[object] = ...
+        self._gun_id: int = gun_id
+        self._base_damage: int = base_damage
+        self._accuracy: int = accuracy
+        self._gun_range: int = gun_range
+        self._ammo_capacity: int = ammo_capacity
+        self._magazine_well: list[object] = ...
 
-    def triger(self, damage: float or int) -> float or int:
+    def trigger(self, damage: float or int) -> float or int:
         try:
-            damage = damage + (damage * self.magazine_well[-1].damage) # The final damage for the target
-            self.magazine_well.pop()
+            damage = damage + (damage * self._magazine_well[-1].get_damage()) # The final damage for the target
+            self._magazine_well.pop()
         except IndexError:
             return 0
-        
+
         return damage
 
     def reload(self, magazine: object) -> None:
-        self.magazine_well = magazine.bullets * self.ammo_capacity
+        self._magazine_well = magazine.get_bullets() * self._ammo_capacity
 
     def load_mp3(self, file: str) -> None:
         pygame.mixer.init()
         pygame.mixer.music.load(file)
         pygame.mixer.music.play()
 
+    def get_gun_id(self):
+        return self._gun_id
+
+    def get_base_damage(self):
+        return self._base_damage
+
+    def get_accuracy(self):
+        return self._accuracy
+
+    def get_gun_range(self):
+        return self._gun_range
+
+    def get_ammo_capacity(self):
+        return self._ammo_capacity
+
+    def get_magazine_well(self):
+        return self._magazine_well
+
 class Pistol(Gun): # Child Class
 
     def __init__(self) -> None:
         super().__init__(
             gun_id = 1, # unique
-            base_damage = 30,
+            base_damage = 50,
             accuracy = 0.70, # in percentage (70%)
             gun_range = 50, # in meters (50 meters)
             ammo_capacity = 10
@@ -287,8 +317,9 @@ while used_bullet == ... or used_bullet == None:
 
     used_bullet = err_msg(used_bullet)
 
+
     try:
-        if used_gun.gun_id != used_bullet.bullet_id:
+        if used_gun.get_gun_id() != used_bullet.get_bullet_id():
             reselect = input(
                 "Unable to reload: Bullet is not for the gun you've used\nClick Enter to reselect")
             used_bullet = None
@@ -317,31 +348,31 @@ assassinator = Gunner(
         used_gun
     )
 
-target_health = target.health
-target_armor = target.armor
+target_health = target.get_health()
+target_armor = target.get_armor()
 
 while target_health > 0:
-    ammo: int = len(assassinator.gun_used.magazine_well) # Tracks The Number of ammo
+    ammo: int = len(assassinator.get_gun_used().get_magazine_well()) # Tracks The Number of ammo
     
     print(
             f'''
                            --Killer and Target Information--
 
-Killer      : {assassinator.name:<40}Target      : {target.name}
-Health      : {assassinator.health:<40.2f}Health      : {target_health:.2f}
-Armor       : {assassinator.armor:<40}Armor       : {target_armor:.2f}
-Gun Mastery : {assassinator.gun_mastery:<40.2f}Gun Mastery : {target.gun_mastery:.2f}
+Killer      : {assassinator.get_name():<40}Target      : {target.get_name()}
+Health      : {assassinator.get_health():<40.2f}Health      : {target_health:.2f}
+Armor       : {assassinator.get_armor():<40}Armor       : {target_armor:.2f}
+Gun Mastery : {assassinator.get_gun_mastery():<40.2f}Gun Mastery : {target.get_gun_mastery():.2f}
 ============================================================================================
                                     --Statistics--
 
-Distance from the Target : {assassinator.distance_away}
-Gun Base-Damage          : {used_gun.base_damage}
-Gun Accuracy             : {used_gun.accuracy}
-Bullet Damage            : {used_bullet.damage}
+Distance from the Target : {assassinator.get_distance()}
+Gun Base-Damage          : {used_gun.get_base_damage()}
+Gun Accuracy             : {used_gun.get_accuracy()}
+Bullet Damage            : {used_bullet.get_damage()}
 ============================================================================================
                                     --Gun Status--
                                     
-ammo : {ammo}/{assassinator.gun_used.ammo_capacity}
+ammo : {ammo}/{assassinator.get_gun_used().get_ammo_capacity()}
             '''
         )
     
@@ -361,18 +392,18 @@ Click R then Enter to Reload
             used_gun.no_ammo_sound()
             time.sleep(2)
         
-        if target.armor > 0 and ammo > 0: # Check if the is not fully damaged and if there is still bullets otherwise we don't need to calculate
+        if target_armor > 0 and ammo > 0: # Check if the is not fully damaged and if there is still bullets otherwise we don't need to calculate
             #Armor Reduction = Damage * Armor Reduction Percentage
             #Health Damage = Damage - Armor Reduction
-            armor_reduction = assassinator.final_damage * 0.7 # Armor Reduction Percentage is 70%
-            health_damage = assassinator.final_damage - armor_reduction
+            armor_reduction = assassinator.get_damage() * 0.7 # Armor Reduction Percentage is 70%
+            health_damage = assassinator.get_damage() - armor_reduction
             
-            target.armor -= armor_reduction
-            target_armor = 0 if target.armor < 0 else target.armor
+            target_armor -= armor_reduction
+            target_armor = 0 if target_armor < 0 else target_armor
                 
-            target.health -= assassinator.gun_used.triger(health_damage)
+            target_health -= assassinator.get_gun_used().trigger(health_damage)
         else:
-            target.health -= assassinator.gun_used.triger(assassinator.final_damage)
+            target_health -= assassinator.get_gun_used().trigger(assassinator.get_damage())
 
         if ammo > 0:
             clear_console()
@@ -380,7 +411,8 @@ Click R then Enter to Reload
             used_gun.shoot_sound()
             time.sleep(2)
 
-        target_health = target.health
+        # target_health = target_health
+        # target_armor = target_armor
     else:
         big_font("RELOADING...")
         used_gun.reloading_sound()
@@ -389,6 +421,6 @@ Click R then Enter to Reload
 
     clear_console()
 
-big_font(f"{target.name.upper()}  IS  DEAD!")
+big_font(f"{target.get_name().upper()}  IS  DEAD!")
 time.sleep(2)
 big_font("Mission  Success!")
